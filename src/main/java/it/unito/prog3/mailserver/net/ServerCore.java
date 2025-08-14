@@ -1,48 +1,52 @@
 package it.unito.prog3.mailserver.net;
 
-import it.unito.prog3.mailserver.store.MailStore;
-
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.concurrent.*;
-import java.util.function.Consumer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Avvia il server e rimane in ascolto per le connessioni client.
+ * Usa un pool di thread scalabile (CachedThreadPool) e mostra
+ * il numero di client connessi in tempo reale.
+ */
 public class ServerCore {
-    private final int port;
-    private final Consumer<String> log;
-    private final MailStore store;
-    private volatile boolean running;
-    private Thread acceptor;
-    private final ExecutorService pool =
-            Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public ServerCore(int port, MailStore store, Consumer<String> log) {
-        this.port = port;
-        this.store = store;
-        this.log = log;
+    private static final int PORT = 12345;
+    private final ExecutorService pool;
+    private final AtomicInteger connectedClients = new AtomicInteger(0);
+
+    public ServerCore() {
+        // Pool scalabile: crea nuovi thread al bisogno e li riusa
+        pool = Executors.newCachedThreadPool();
     }
 
     public void start() {
-        if (running) return;
-        running = true;
-        acceptor = new Thread(() -> {
-            try (ServerSocket ss = new ServerSocket(port)) {
-                log.accept("Server in ascolto sulla porta " + port);
-                while (running) {
-                    Socket s = ss.accept();
-                    pool.submit(new RequestHandler(s, store, log));
-                }
-            } catch (Exception e) {
-                log.accept("Errore server: " + e.getMessage());
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("📡 Mail Server in ascolto sulla porta " + PORT);
+
+            while (true) {
+                Socket clientSocket = serverSocket.accept();
+                int current = connectedClients.incrementAndGet();
+                System.out.println("🔌 Nuovo client connesso. Totale: " + current);
+
+                pool.execute(() -> {
+                    try {
+                        new RequestHandler(clientSocket).run();
+                    } finally {
+                        int remaining = connectedClients.decrementAndGet();
+                        System.out.println("❎ Client disconnesso. Totale: " + remaining);
+                    }
+                });
             }
-        }, "server-acceptor");
-        acceptor.setDaemon(true);
-        acceptor.start();
+        } catch (IOException e) {
+            System.err.println("❌ Errore avvio server: " + e.getMessage());
+        }
     }
 
-    public void stop() {
-        running = false;
-        pool.shutdownNow();
-        log.accept("Server arrestato.");
+    public static void main(String[] args) {
+        new ServerCore().start();
     }
 }

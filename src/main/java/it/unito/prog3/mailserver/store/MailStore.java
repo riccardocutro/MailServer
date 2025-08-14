@@ -1,131 +1,148 @@
 package it.unito.prog3.mailserver.store;
 
-import it.unito.prog3.mailserver.model.Email;
+import shared.Email;
 
-import java.time.Instant;
+import java.io.*;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Classe che gestisce la memorizzazione e la gestione delle caselle email.
- * <p>
- * Ogni account ha una inbox rappresentata da una lista di {@link Email}.
- * L'accesso concorrente è gestito tramite strutture thread-safe.
- * </p>
+ * Gestisce la memorizzazione e persistenza delle caselle email.
+ * Thread-safe per gestire più client contemporaneamente.
  */
 public class MailStore {
+
+    private static MailStore instance;
 
     /** Insieme degli account registrati sul server */
     private final Set<String> accounts = new HashSet<>();
     /** Mappa indirizzo → inbox (lista dei messaggi) */
     private final Map<String, List<Email>> boxes = new ConcurrentHashMap<>();
     /** Generatore atomico di ID univoci per le email */
-    private final AtomicLong idGen = new AtomicLong(0);
+    private final AtomicInteger idGen = new AtomicInteger(0);
     /** Funzione di log per inviare messaggi alla GUI */
     private final Consumer<String> log;
+    /** File di persistenza */
+    private static final String STORE_FILE = "mailstore.dat";
 
-    /**
-     * Crea un nuovo MailStore e carica gli account di base.
-     *
-     * @param log funzione di logging (accetta stringhe)
-     */
-    public MailStore(Consumer<String> log) {
+    private MailStore(Consumer<String> log) {
         this.log = log;
-
-        List<String> base = List.of(
-                "riccardo@mail.com",
-                "davide@mail.com",
-                "orlando@mail.it"
-        );
-
-        for (String a : base) {
-            accounts.add(a);
-            boxes.put(a, Collections.synchronizedList(new ArrayList<>()));
-        }
-
-        log.accept("Account caricati: " + accounts);
+        loadData();
     }
 
-    /**
-     * Verifica se un account esiste.
-     *
-     * @param email indirizzo email
-     * @return true se esiste, false altrimenti
-     */
-    public boolean exists(String email) {
+    /** Singleton */
+    public static synchronized MailStore getInstance(Consumer<String> log) {
+        if (instance == null) {
+            instance = new MailStore(log);
+        }
+        return instance;
+    }
+
+    /** Verifica se un account esiste */
+    public boolean userExists(String email) {
         return accounts.contains(email);
     }
 
-    /**
-     * Genera un nuovo ID univoco per un'email.
-     *
-     * @return ID univoco
-     */
-    public long nextId() {
+    /** Genera un nuovo ID univoco */
+    public int getNextEmailId() {
         return idGen.incrementAndGet();
     }
 
-    /**
-     * Consegna un'email a tutti i destinatari.
-     *
-     * @param e email da consegnare
-     * @throws IllegalArgumentException se uno dei destinatari non esiste
-     */
-    public void deliver(Email e) {
-        for (String to : e.to()) {
-            if (!exists(to)) {
-                throw new IllegalArgumentException("Unknown recipient: " + to);
+    /** Aggiunge un'email nella inbox di un utente */
+    public void addEmail(String recipient, Email email) {
+        if (!userExists(recipient)) {
+            throw new IllegalArgumentException("Unknown recipient: " + recipient);
+        }
+        boxes.get(recipient).add(email);
+        saveData();
+        log.accept("Nuova email per " + recipient + ": " + email);
+    }
+
+    /** Restituisce i messaggi ricevuti dopo un certo ID */
+    public List<Email> getEmailsAfter(String user, int lastId) {
+        if (!userExists(user)) return List.of();
+        List<Email> inbox = boxes.get(user);
+        synchronized (inbox) {
+            List<Email> res = new ArrayList<>();
+            for (Email e : inbox) {
+                if (e.getId() > lastId) res.add(e);
             }
-            boxes.get(to).add(e);
+            return res;
         }
     }
 
-    /**
-     * Restituisce tutti i messaggi ricevuti dopo un certo ID.
-     *
-     * @param email   account destinatario
-     * @param afterId ID dopo il quale restituire i messaggi
-     * @return lista di nuovi messaggi
-     */
-    public List<Email> getNew(String email, long afterId) {
-        if (!exists(email)) return List.of();
-        List<Email> all = boxes.get(email);
-        List<Email> res = new ArrayList<>();
-        synchronized (all) {
-            for (Email e : all) {
-                if (e.id() > afterId) res.add(e);
+    /** Cancella un messaggio */
+    public boolean deleteEmail(String user, int id) {
+        if (!userExists(user)) return false;
+        List<Email> inbox = boxes.get(user);
+        boolean removed;
+        synchronized (inbox) {
+            removed = inbox.removeIf(e -> e.getId() == id);
+        }
+        if (removed) saveData();
+        return removed;
+    }
+
+    /** Costruisce una nuova Email */
+    public Email buildEmail(String from, String to, String subject, String body) {
+        return new Email(
+                getNextEmailId(),
+                from,
+                to,
+                subject,
+                body,
+                LocalDateTime.now()
+        );
+    }
+
+    /** Carica dati da file o crea gli account predefiniti */
+    @SuppressWarnings("unchecked")
+    private void loadData() {
+        File f = new File(STORE_FILE);
+        if (!f.exists()) {
+            log.accept("Nessun file di persistenza trovato. Creazione account predefiniti...");
+
+            List<String> base = List.of(
+                    "riccardo@mail.com",
+                    "davide@mail.com",
+                    "orlando@mail.it"
+            );
+
+            for (String a : base) {
+                accounts.add(a);
+                boxes.put(a, Collections.synchronizedList(new ArrayList<>()));
             }
+
+            idGen.set(0); // reset contatore ID
+            saveData();   // salva subito la struttura di base
+            log.accept("Account iniziali creati e salvati su file.");
+            return;
         }
-        return res;
+
+        // Se il file esiste, carica i dati
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f))) {
+            accounts.clear();
+            boxes.clear();
+            accounts.addAll((Set<String>) ois.readObject());
+            boxes.putAll((Map<String, List<Email>>) ois.readObject());
+            idGen.set(ois.readInt());
+            log.accept("Dati caricati da file. Account: " + accounts);
+        } catch (IOException | ClassNotFoundException e) {
+            log.accept("Errore nel caricamento dati: " + e.getMessage());
+        }
     }
 
-    /**
-     * Elimina un messaggio dalla inbox di un utente.
-     *
-     * @param email account proprietario della inbox
-     * @param id    ID del messaggio da eliminare
-     * @return true se il messaggio è stato rimosso, false altrimenti
-     */
-    public boolean delete(String email, long id) {
-        if (!exists(email)) return false;
-        List<Email> all = boxes.get(email);
-        synchronized (all) {
-            return all.removeIf(e -> e.id() == id);
+    /** Salva dati su file */
+    private void saveData() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(STORE_FILE))) {
+            oos.writeObject(accounts);
+            oos.writeObject(boxes);
+            oos.writeInt(idGen.get());
+        } catch (IOException e) {
+            log.accept("Errore nel salvataggio dati: " + e.getMessage());
         }
-    }
-
-    /**
-     * Costruisce una nuova {@link Email}.
-     *
-     * @param from    mittente
-     * @param to      destinatari
-     * @param subject oggetto
-     * @param body    corpo del messaggio
-     * @return nuova email
-     */
-    public Email buildEmail(String from, List<String> to, String subject, String body) {
-        return new Email(nextId(), from, to, subject, body, Instant.now());
     }
 }
