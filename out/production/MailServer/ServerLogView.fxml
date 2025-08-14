@@ -1,8 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<BorderPane xmlns:fx="http://javafx.com/fxml" fx:controller="it.unito.prog3.mailserver.controller.ServerController">
-    <center>
-        <TextArea fx:id="logArea" editable="false" wrapText="true"/>
-    </center>
+<?import javafx.scene.shape.Circle?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="it.unito.prog3.mailserver.controller.ServerController"
+            stylesheets="@css/server.css">
+
+<!-- TOP: toolbar -->
+<top>
+    <HBox spacing="12" styleClass="toolbar" BorderPane.alignment="CENTER_LEFT">
+        <children>
+
+            <!-- Titolo -->
+            <Label text="Mail Server" styleClass="title"/>
+
+            <!-- chip stato -->
+            <HBox spacing="6" alignment="CENTER" styleClass="status-chip">
+                <children>
+                    <Circle fx:id="statusDot" radius="5"/> <!-- verde/rosso via CSS/classi -->
+                    <Label fx:id="statusLabel" text="Offline"/>
+                </children>
+            </HBox>
+
+            <Separator orientation="VERTICAL"/>
+
+            <!-- Porta -->
+            <Label text="Porta:"/>
+            <TextField fx:id="portField" promptText="5555" prefWidth="80"/>
+            <Button text="Start"
+                    fx:id="startBtn"
+                    onAction="#onStart"
+                    styleClass="primary"/>
+            <Button text="Stop"
+                    fx:id="stopBtn"
+                    onAction="#onStop"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+            <!-- Azioni utility -->
+            <!--- <Button text="Pulisci log" onAction="#onClearLog"/> -->
+        </children>
+
+        <padding>
+            <Insets top="10" right="12" bottom="10" left="12"/>
+        </padding>
+    </HBox>
+</top>
+
+<!-- CENTER: log area (responsive) -->
+<center>
+    <VBox spacing="8">
+        <children>
+            <Label text="Log eventi" styleClass="section"/>
+            <TextArea fx:id="logArea"
+                      wrapText="true"
+                      editable="false"
+                      VBox.vgrow="ALWAYS"/>
+        </children>
+        <padding>
+            <Insets top="8" right="12" bottom="12" left="12"/>
+        </padding>
+    </VBox>
+</center>
+
+<!-- BOTTOM: status bar -->
+<bottom>
+    <HBox spacing="10" styleClass="statusbar" BorderPane.alignment="CENTER_LEFT">
+        <children>
+            <Label text="Connessioni:"/>
+            <Label fx:id="connCountLabel" text="0"/>
+            <Separator orientation="VERTICAL"/>
+            <Label text="Ultimo evento:"/>
+            <Label fx:id="lastEventLabel" text="—"/>
+        </children>
+        <padding>
+            <Insets top="6" right="12" bottom="6" left="12"/>
+        </padding>
+    </HBox>
+</bottom>
+
 </BorderPane>

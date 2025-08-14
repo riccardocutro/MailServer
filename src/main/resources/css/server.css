@@ -1,0 +1,53 @@
+.root {
+    -fx-font-family: "Segoe UI", "Inter", "SF Pro Text", Arial;
+    -fx-background-color: linear-gradient(to bottom, #fafafa, #f4f6f8);
+}
+
+.toolbar {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 0 0 1 0;
+}
+
+.statusbar {
+    -fx-background-color: white;
+    -fx-border-color: #e5e7eb;
+    -fx-border-width: 1 0 0 0;
+}
+
+.title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 700;
+}
+
+.section {
+    -fx-font-size: 12.5px;
+    -fx-text-fill: #6b7280;
+}
+
+TextArea {
+    -fx-background-insets: 0;
+    -fx-background-radius: 10;
+    -fx-control-inner-background: #ffffff;
+    -fx-border-color: #e5e7eb;
+    -fx-border-radius: 10;
+    -fx-padding: 10;
+}
+
+.primary {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-background-radius: 8;
+}
+.primary:hover { -fx-background-color: #1d4ed8; }
+.primary:pressed { -fx-background-color: #1e40af; }
+
+.status-chip {
+    -fx-background-color: #f3f4f6;
+    -fx-background-radius: 999;
+    -fx-padding: 4 10 4 8;
+}
+
+/* puoi aggiungere/togliere queste styleClass da codice */
+.online  { -fx-fill: #16a34a; }   /* verde */
+.offline { -fx-fill: #ef4444; }   /* rosso */
