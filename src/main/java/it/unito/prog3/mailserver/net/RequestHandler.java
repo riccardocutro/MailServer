@@ -2,7 +2,7 @@ package it.unito.prog3.mailserver.net;
 
 import shared.Email;
 import shared.Protocol;
-import it.unito.prog3.mailserver.store.MailStore; // Da implementare o adattare
+import it.unito.prog3.mailserver.store.MailStore;
 
 import java.io.*;
 import java.net.Socket;

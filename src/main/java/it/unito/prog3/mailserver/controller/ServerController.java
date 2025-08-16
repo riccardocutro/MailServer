@@ -33,8 +33,7 @@ public class ServerController {
     public void initialize() {
         appendLog("GUI server pronta.");
         // MailStore con callback di log verso la GUI
-        this.store = new MailStore(this::appendLog);
-        // Core del server: porta 5555, usa store e callback di log
+        this.store = MailStore.getInstance(this::appendLog);
         this.core = new ServerCore(5555, store, this::appendLog);
         this.core.start();
     }
