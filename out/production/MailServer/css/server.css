@@ -1,53 +1,458 @@
+/* ===== BASE STYLES - MAIL SERVER THEME ===== */
 .root {
-    -fx-font-family: "Segoe UI", "Inter", "SF Pro Text", Arial;
-    -fx-background-color: linear-gradient(to bottom, #fafafa, #f4f6f8);
+    -fx-font-family: "Segoe UI", "Inter", "SF Pro Text", system-ui, Arial;
+    -fx-background-color: linear-gradient(to bottom, #f8fafc, #f1f5f9);
 }
 
-.toolbar {
-    -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+/* ===== MAIN LAYOUT SECTIONS ===== */
+.main-toolbar {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #f8fafc);
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 0 2 0;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 6, 0, 0, 2);
+}
+
+.info-toolbar {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #e2e8f0;
     -fx-border-width: 0 0 1 0;
+    -fx-padding: 4 0;
 }
 
-.statusbar {
-    -fx-background-color: white;
-    -fx-border-color: #e5e7eb;
+.status-bar {
+    -fx-background-color: linear-gradient(to top, #f1f5f9, #f8fafc);
+    -fx-border-color: #e2e8f0;
     -fx-border-width: 1 0 0 0;
 }
 
-.title {
-    -fx-font-size: 16px;
+.log-section {
+    -fx-background-color: #ffffff;
+}
+
+.side-panel {
+    -fx-background-color: #f8fafc;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 0 0 0 1;
+}
+
+/* ===== TYPOGRAPHY - MAIL SERVER SPECIFIC ===== */
+.main-title {
+    -fx-font-size: 20px;
     -fx-font-weight: 700;
+    -fx-text-fill: #bbc2d0;
 }
 
-.section {
-    -fx-font-size: 12.5px;
-    -fx-text-fill: #6b7280;
+.server-icon {
+    -fx-font-size: 20px;
 }
 
-TextArea {
+.section-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #334155;
+}
+
+.panel-title {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #475569;
+    -fx-padding: 0 0 4 0;
+}
+
+.control-label {
+    -fx-font-size: 13px;
+    -fx-font-weight: 500;
+    -fx-text-fill: #475569;
+}
+
+.status-text {
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-text-fill: #64748b;
+}
+
+/* Info toolbar labels */
+.info-icon {
+    -fx-font-size: 14px;
+}
+
+.info-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #64748b;
+    -fx-font-weight: 500;
+}
+
+.info-value {
+    -fx-font-size: 12px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #334155;
+}
+
+.info-value.success {
+    -fx-text-fill: #059669;
+}
+
+.info-value.error {
+    -fx-text-fill: #dc2626;
+}
+
+.info-value.uptime {
+    -fx-text-fill: #7c3aed;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+}
+
+/* Status bar */
+.status-info {
+    -fx-font-size: 12px;
+    -fx-text-fill: #ffffff;
+}
+
+.status-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #ffffff;
+}
+
+.status-time {
+    -fx-font-size: 11px;
+    -fx-text-fill: #ffffff;
+    -fx-font-style: italic;
+}
+
+.timestamp-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: #94a3b8;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+}
+
+/* Statistics panel */
+.stat-label {
+    -fx-font-size: 11px;
+    -fx-text-fill: #64748b;
+}
+
+.stat-value {
+    -fx-font-size: 11px;
+    -fx-font-weight: 700;
+    -fx-text-fill: #ffffff;
+}
+
+.detail-icon {
+    -fx-font-size: 12px;
+    -fx-text-fill: #10b981;
+}
+
+.detail-info {
+    -fx-font-size: 10px;
+    -fx-text-fill: #ffffff;
+}
+
+/* ===== FORM CONTROLS - MAIL SERVER THEME ===== */
+TextField {
+    -fx-background-color: #ffffff;
     -fx-background-insets: 0;
-    -fx-background-radius: 10;
-    -fx-control-inner-background: #ffffff;
-    -fx-border-color: #e5e7eb;
-    -fx-border-radius: 10;
-    -fx-padding: 10;
+    -fx-background-radius: 8;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 8;
+    -fx-padding: 8 12;
+    -fx-font-size: 13px;
+    -fx-text-fill: #ffffff;
 }
 
-.primary {
-    -fx-background-color: #2563eb;
-    -fx-text-fill: white;
+TextField:focused {
+    -fx-border-color: #3b82f6;
+    -fx-border-width: 2;
+    -fx-background-color: #fefefe;
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.15), 4, 0, 0, 0);
+}
+
+.port-input {
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-weight: 600;
+}
+
+/* ComboBox styling */
+.log-filter {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 6;
+    -fx-border-color: #cbd5e1;
+    -fx-border-radius: 6;
+    -fx-font-size: 12px;
+    -fx-text-fill: #475569;
+}
+
+.log-filter:focused {
+    -fx-border-color: #3b82f6;
+}
+
+/* ===== BUTTONS - MAIL SERVER ACTIONS ===== */
+Button {
+    -fx-background-radius: 8;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 10 16;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0, 0, 1);
+}
+
+.primary-btn {
+    -fx-background-color: linear-gradient(to bottom, #3b82f6, #2563eb);
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #2563eb;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.primary-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #2563eb, #1d4ed8);
+    -fx-effect: dropshadow(gaussian, rgba(59, 130, 246, 0.3), 4, 0, 0, 2);
+}
+
+.primary-btn:pressed {
+    -fx-background-color: #1e40af;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 2, 0, 0, 1);
+}
+
+.danger-btn {
+    -fx-background-color: linear-gradient(to bottom, #ef4444, #dc2626);
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #dc2626;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.danger-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #dc2626, #b91c1c);
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.3), 4, 0, 0, 2);
+}
+
+.secondary-btn {
+    -fx-background-color: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+    -fx-text-fill: #475569;
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+}
+
+.secondary-btn:hover {
+    -fx-background-color: linear-gradient(to bottom, #f1f5f9, #e2e8f0);
+    -fx-border-color: #94a3b8;
+}
+
+Button:disabled {
+    -fx-opacity: 0.4;
+    -fx-cursor: default;
+    -fx-effect: none;
+}
+
+/* ===== STATUS ELEMENTS - SERVER SPECIFIC ===== */
+.status-chip {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #f8fafc);
+    -fx-background-radius: 16;
+    -fx-padding: 6 14;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1;
+    -fx-border-radius: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 3, 0, 0, 1);
+}
+
+/* Status indicators */
+.online {
+    -fx-fill: #10b981;
+    -fx-effect: dropshadow(gaussian, rgba(16, 185, 129, 0.4), 4, 0, 0, 0);
+}
+
+.offline {
+    -fx-fill: #ef4444;
+}
+
+.status-indicator {
+    -fx-fill: #94a3b8;
+}
+
+.status-indicator.online {
+    -fx-fill: #10b981;
+}
+
+/* ===== LOG AREA - ENHANCED FOR SERVER LOGS ===== */
+.log-area {
+    -fx-background-color: #0f172a;
+    -fx-control-inner-background: #0f172a;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-family: "Consolas", "Monaco", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-background-radius: 8;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-padding: 16;
+    -fx-effect: inset dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+}
+
+.log-area .content {
+    -fx-background-color: #0f172a;
     -fx-background-radius: 8;
 }
-.primary:hover { -fx-background-color: #1d4ed8; }
-.primary:pressed { -fx-background-color: #1e40af; }
 
-.status-chip {
-    -fx-background-color: #f3f4f6;
-    -fx-background-radius: 999;
-    -fx-padding: 4 10 4 8;
+.log-area .scroll-pane {
+    -fx-background-color: transparent;
 }
 
-/* puoi aggiungere/togliere queste styleClass da codice */
-.online  { -fx-fill: #16a34a; }   /* verde */
-.offline { -fx-fill: #ef4444; }   /* rosso */
+.log-area .scroll-pane .viewport {
+    -fx-background-color: #0f172a;
+}
+
+/* ===== INFO PANELS - MAIL SERVER SECTIONS ===== */
+.info-panel {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 12;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1;
+    -fx-border-radius: 12;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.04), 3, 0, 0, 2);
+}
+
+/* ===== LIST VIEWS - ACCOUNTS AND CONNECTIONS ===== */
+ListView {
+    -fx-background-color: #f8fafc;
+    -fx-background-insets: 0;
+    -fx-border-color: #e2e8f0;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-font-size: 12px;
+    -fx-effect: inset dropshadow(gaussian, rgba(0,0,0,0.05), 2, 0, 0, 1);
+}
+
+.accounts-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 8 12;
+    -fx-border-color: transparent;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 12px;
+    -fx-font-weight: 500;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+}
+
+.accounts-list .list-cell:filled:selected {
+    -fx-background-color: #dbeafe;
+    -fx-text-fill: #1e40af;
+    -fx-background-radius: 6;
+}
+
+.accounts-list .list-cell:filled:hover {
+    -fx-background-color: #f0f9ff;
+    -fx-background-radius: 6;
+}
+
+.connections-list .list-cell {
+    -fx-background-color: transparent;
+    -fx-padding: 6 12;
+    -fx-border-color: transparent;
+    -fx-text-fill: #059669;
+    -fx-font-size: 11px;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-weight: 500;
+}
+
+.connections-list .list-cell:filled:selected {
+    -fx-background-color: #d1fae5;
+    -fx-text-fill: #047857;
+    -fx-background-radius: 6;
+}
+
+.connections-list .list-cell:filled:hover {
+    -fx-background-color: #ecfdf5;
+    -fx-background-radius: 6;
+}
+
+/* ===== SCROLLBARS - MODERN DESIGN ===== */
+.scroll-bar {
+    -fx-background-color: transparent;
+    -fx-opacity: 0.6;
+}
+
+.scroll-bar:hover {
+    -fx-opacity: 1;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #f1f5f9;
+    -fx-border-color: transparent;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #cbd5e1;
+    -fx-background-radius: 4;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #94a3b8;
+}
+
+/* ===== SPLIT PANE ===== */
+.split-pane {
+    -fx-background-color: transparent;
+}
+
+.split-pane .split-pane-divider {
+    -fx-background-color: #e2e8f0;
+    -fx-padding: 0 1 0 1;
+}
+
+/* ===== GRID PANE STYLING ===== */
+GridPane {
+    -fx-hgap: 8;
+    -fx-vgap: 6;
+}
+
+/* ===== SEPARATOR STYLING ===== */
+Separator {
+    -fx-background-color: #e2e8f0;
+}
+
+Separator .line {
+    -fx-background-color: #e2e8f0;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media screen and (max-width: 1200px) {
+    .side-panel {
+        -fx-pref-width: 280;
+        -fx-min-width: 280;
+    }
+}
+
+@media screen and (max-width: 800px) {
+    .main-title {
+        -fx-font-size: 16px;
+    }
+
+    .info-toolbar {
+        -fx-spacing: 12;
+    }
+}
+
+/* Pulsante Stop in stile "secondary" */
+Button.secondary {
+    -fx-background-color: #f9fafb;
+    -fx-text-fill: #374151;
+    -fx-border-color: #d1d5db;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+}
+Button.secondary:hover {
+    -fx-background-color: #f3f4f6;
+    -fx-border-color: #9ca3af;
+}
+Button.secondary:pressed {
+    -fx-background-color: #e5e7eb;
+}
+
+/* Area di log monospazio */
+.log-area {
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 11px;
+    -fx-text-fill: #ffffff;
+}

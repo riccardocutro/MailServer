@@ -1,151 +1,152 @@
 package it.unito.prog3.mailserver.net;
 
+import it.unito.prog3.mailserver.store.MailStore;
 import shared.Email;
 import shared.Protocol;
-import it.unito.prog3.mailserver.store.MailStore;
+import shared.Wire;
 
 import java.io.*;
 import java.net.Socket;
+import java.net.SocketException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
- * Gestisce una singola connessione con il client.
- * Riceve un comando testuale, lo interpreta e risponde.
+ * Gestisce una singola connessione client.
+ * <p>Legge un comando testuale, lo interpreta e invia la risposta.</p>
  */
 public class RequestHandler implements Runnable {
 
     private final Socket socket;
-    private final MailStore mailStore; // Accesso ai dati persistenti
+    private final MailStore store;
+    private final Consumer<String> log;
 
-    public RequestHandler(Socket socket) {
+    /**
+     * @param socket connessione accettata dal server
+     * @param store  archivio dati condiviso
+     * @param log    callback per log eventi (usare s -> {} per disabilitare)
+     */
+    public RequestHandler(Socket socket, MailStore store, Consumer<String> log) {
         this.socket = socket;
-        this.mailStore = MailStore.getInstance(); // Singleton per accesso unico
+        this.store = store;
+        this.log = (log == null) ? s -> {} : log;
     }
 
     @Override
     public void run() {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
+             PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true)) {
 
-            String request = in.readLine();
-            System.out.println("📩 Richiesta ricevuta: " + request);
+            String line = in.readLine();
+            if (line == null) return;
 
-            if (request != null) {
-                String[] parts = request.split(";");
-                String command = parts[0];
+            String[] p = line.split(";", -1); // non perde campi vuoti
+            String cmd = p[0];
 
-                switch (command) {
-                    case Protocol.CMD_LOGIN -> handleLogin(parts, out);
-                    case Protocol.CMD_SEND -> handleSend(parts, out);
-                    case Protocol.CMD_GET -> handleGet(parts, out);
-                    case Protocol.CMD_DELETE -> handleDelete(parts, out);
-                    default -> out.println(Protocol.RESP_ERROR + ";Comando sconosciuto");
-                }
+            switch (cmd) {
+                case Protocol.CMD_LOGIN  -> handleLogin(p, out);
+                case Protocol.CMD_SEND   -> handleSend(p, out);
+                case Protocol.CMD_GET    -> handleGet(p, out);
+                case Protocol.CMD_DELETE -> handleDelete(p, out);
+                default -> out.println(Protocol.RESP_ERROR + ";UnknownCommand");
             }
-
-        } catch (IOException e) {
-            System.err.println("❌ Errore nella connessione client: " + e.getMessage());
+        } catch (SocketException se) {
+            log.accept("Connessione interrotta: " + se.getMessage());
+        } catch (IOException ioe) {
+            log.accept("Errore I/O handler: " + ioe.getMessage());
+        } finally {
+            try { socket.close(); } catch (IOException ignored) {}
         }
     }
 
-    private void handleLogin(String[] parts, PrintWriter out) {
-        if (parts.length < 2) {
-            out.println(Protocol.RESP_ERROR + ";BadRequest");
-            return;
-        }
-        String email = parts[1];
-        if (mailStore.userExists(email)) {
-            out.println(Protocol.RESP_OK);
-        } else {
-            out.println(Protocol.RESP_ERROR + ";UserNotFound");
-        }
+    /** LOGIN;email */
+    private void handleLogin(String[] p, PrintWriter out) {
+        if (p.length < 2) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
+        String email = p[1];
+        out.println(store.userExists(email) ? Protocol.RESP_OK : Protocol.RESP_ERROR + ";UserNotFound");
     }
 
-    private void handleSend(String[] parts, PrintWriter out) {
-        if (parts.length < 5) {
-            out.println(Protocol.RESP_ERROR + ";BadRequest");
-            return;
-        }
-        String from = parts[1];
-        String toList = parts[2];
-        String subject = parts[3];
-        String body = parts[4];
+    /** SEND;from;toCsv;base64(subject);base64(body) */
+    private void handleSend(String[] p, PrintWriter out) {
+        if (p.length < 5) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
 
-        String[] recipients = toList.split(",");
+        String from = p[1];
+        List<String> to = Arrays.stream(p[2].split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).toList();
+        String subject = Wire.unb64(p[3]);
+        String body    = Wire.unb64(p[4]);
 
-        for (String recipient : recipients) {
-            if (!mailStore.userExists(recipient)) {
-                out.println(Protocol.RESP_ERROR + ";InvalidRecipient:" + recipient);
+        // Valida destinatari
+        for (String r : to) {
+            if (!store.userExists(r)) {
+                out.println(Protocol.RESP_ERROR + ";InvalidRecipient;" + r);
                 return;
             }
         }
 
-        for (String recipient : recipients) {
+        // Consegna (copia singola in inbox del destinatario)
+        for (String r : to) {
             Email email = new Email(
-                    mailStore.getNextEmailId(),
+                    store.getNextEmailId(), // se preferisci, rinomina in nextId()
                     from,
-                    recipient,
+                    List.of(r),
                     subject,
                     body,
                     LocalDateTime.now()
             );
-            mailStore.addEmail(recipient, email);
+            store.addEmail(r, email);
         }
 
         out.println(Protocol.RESP_OK);
+        log.accept("SEND da " + from + " a " + String.join(",", to));
     }
 
-    private void handleGet(String[] parts, PrintWriter out) {
-        if (parts.length < 3) {
-            out.println(Protocol.RESP_ERROR + ";BadRequest");
-            return;
-        }
-        String user = parts[1];
+    /** GET;user;lastId  → stream di: MSG;id;from;toCsv;base64(subject);base64(body);epochSeconds ... poi END */
+    private void handleGet(String[] p, PrintWriter out) {
+        if (p.length < 3) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
+
+        String user = p[1];
         int lastId;
-        try {
-            lastId = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            out.println(Protocol.RESP_ERROR + ";InvalidId");
-            return;
-        }
+        try { lastId = Integer.parseInt(p[2]); }
+        catch (NumberFormatException e) { out.println(Protocol.RESP_ERROR + ";InvalidId"); return; }
 
-        if (!mailStore.userExists(user)) {
-            out.println(Protocol.RESP_ERROR + ";UserNotFound");
-            return;
-        }
+        if (!store.userExists(user)) { out.println(Protocol.RESP_ERROR + ";UserNotFound"); return; }
 
-        List<Email> newMessages = mailStore.getEmailsAfter(user, lastId);
-        for (Email email : newMessages) {
-            out.println(email.toString());
+        List<Email> list = store.getEmailsAfter(user, lastId);
+        for (Email e : list) {
+            String toCsv = e.getTo().stream().collect(Collectors.joining(","));
+            long epoch = e.getSentAt().toEpochSecond(ZoneOffset.UTC);
+            out.println(String.join(";",
+                    "MSG",
+                    String.valueOf(e.getId()),
+                    e.getFrom(),
+                    toCsv,
+                    Wire.b64(e.getSubject()),
+                    Wire.b64(e.getBody()),
+                    String.valueOf(epoch)
+            ));
         }
-        out.println("END"); // Segnale di fine lista
+        out.println("END");
+        log.accept("GET per " + user + " -> " + list.size() + " nuovi");
     }
 
-    private void handleDelete(String[] parts, PrintWriter out) {
-        if (parts.length < 3) {
-            out.println(Protocol.RESP_ERROR + ";BadRequest");
-            return;
-        }
-        String user = parts[1];
-        int messageId;
-        try {
-            messageId = Integer.parseInt(parts[2]);
-        } catch (NumberFormatException e) {
-            out.println(Protocol.RESP_ERROR + ";InvalidId");
-            return;
-        }
+    /** DELETE;user;msgId */
+    private void handleDelete(String[] p, PrintWriter out) {
+        if (p.length < 3) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
 
-        if (!mailStore.userExists(user)) {
-            out.println(Protocol.RESP_ERROR + ";UserNotFound");
-            return;
-        }
+        String user = p[1];
+        int msgId;
+        try { msgId = Integer.parseInt(p[2]); }
+        catch (NumberFormatException e) { out.println(Protocol.RESP_ERROR + ";InvalidId"); return; }
 
-        boolean deleted = mailStore.deleteEmail(user, messageId);
-        if (deleted) {
-            out.println(Protocol.RESP_OK);
-        } else {
-            out.println(Protocol.RESP_ERROR + ";MessageNotFound");
-        }
+        if (!store.userExists(user)) { out.println(Protocol.RESP_ERROR + ";UserNotFound"); return; }
+
+        boolean ok = store.deleteEmail(user, msgId);
+        out.println(ok ? Protocol.RESP_OK : Protocol.RESP_ERROR + ";MessageNotFound");
+        if (ok) log.accept("DELETE id=" + msgId + " per " + user);
     }
 }

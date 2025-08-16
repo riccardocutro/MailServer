@@ -4,80 +4,97 @@ import it.unito.prog3.mailserver.net.ServerCore;
 import it.unito.prog3.mailserver.store.MailStore;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.shape.Circle;
 
 /**
  * Controller della GUI del Mail Server.
  * <p>
- * Avvia e arresta il core del server (socket listener) e
- * gestisce il log degli eventi mostrato nella TextArea.
+ * Avvia/arresta il core del server, gestisce il log e
+ * aggiorna lo stato visualizzato nella dashboard.
  * </p>
  */
 public class ServerController {
 
-    /** Area di testo su cui mostrare i log di server e connessioni. */
-    @FXML
-    private TextArea logArea;
+    // === RIFERIMENTI UI ===
+    @FXML private TextArea logArea;
+    @FXML private Label statusLabel;
+    @FXML private Circle statusDot;
+    @FXML private Label connCountLabel;
+    @FXML private Label lastEventLabel;
 
-    /** Componente core che accetta connessioni e delega le richieste. */
+    // === COMPONENTI CORE ===
     private ServerCore core;
-
-    /** Store in-memory (o con persistenza) delle caselle di posta. */
     private MailStore store;
 
     /**
-     * Inizializzazione chiamata da JavaFX dopo il caricamento dell'FXML.
-     * Crea {@link MailStore}, avvia {@link ServerCore} e scrive un messaggio di benvenuto.
+     * Inizializzazione chiamata dopo il caricamento dell'FXML.
      */
     @FXML
     public void initialize() {
         appendLog("GUI server pronta.");
-        // MailStore con callback di log verso la GUI
         this.store = MailStore.getInstance(this::appendLog);
         this.core = new ServerCore(5555, store, this::appendLog);
-        this.core.start();
+        updateStatus(false);
     }
 
-    /**
-     * Appende una riga di log nella TextArea in modo thread-safe.
-     *
-     * @param message messaggio da mostrare
-     */
+    /** Appende una riga di log nella TextArea in modo thread-safe. */
     public void appendLog(String message) {
         if (message == null) return;
         Platform.runLater(() -> {
             if (logArea != null) {
                 logArea.appendText(message + System.lineSeparator());
+                lastEventLabel.setText(message);
             }
         });
     }
 
-    /**
-     * Arresta in modo ordinato il core del server (chiamata alla chiusura finestra).
-     * Da invocare in {@code ServerApp} su evento {@code setOnCloseRequest}.
-     */
-    public void shutdown() {
-        if (core != null) {
-            core.stop();
+    /** Pulisce l'area di log. */
+    @FXML
+    private void onClearLog() {
+        if (logArea != null) {
+            logArea.clear();
+            appendLog("Log pulito.");
         }
-        appendLog("Shutdown richiesto. Bye.");
     }
 
-    // (Opzionali, se in futuro aggiungi pulsanti Start/Stop nell'FXML)
-    /** Avvia il server core se non già in esecuzione. */
+    /** Avvia il server core. */
     @FXML
     private void onStart() {
         if (core == null) core = new ServerCore(5555, store, this::appendLog);
         core.start();
         appendLog("Server avviato manualmente.");
+        updateStatus(true);
     }
 
-    /** Ferma il server core se in esecuzione. */
+    /** Ferma il server core. */
     @FXML
     private void onStop() {
         if (core != null) {
             core.stop();
             appendLog("Server fermato manualmente.");
+            updateStatus(false);
         }
+    }
+
+    /** Arresta il core quando la finestra viene chiusa. */
+    public void shutdown() {
+        if (core != null) core.stop();
+        appendLog("Shutdown richiesto. Bye.");
+        updateStatus(false);
+    }
+
+    /** Aggiorna chip di stato (Online/Offline). */
+    private void updateStatus(boolean online) {
+        Platform.runLater(() -> {
+            statusLabel.setText(online ? "Online" : "Offline");
+            statusDot.getStyleClass().setAll(online ? "online" : "offline");
+        });
+    }
+
+    /** (Stub) Aggiorna il numero di connessioni attive. */
+    public void updateConnectionCount(int count) {
+        Platform.runLater(() -> connCountLabel.setText(String.valueOf(count)));
     }
 }
