@@ -155,7 +155,7 @@ TextField {
     -fx-border-radius: 8;
     -fx-padding: 8 12;
     -fx-font-size: 13px;
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: #000000;  /* ✅ cambiato da bianco a nero */
 }
 
 TextField:focused {
@@ -168,6 +168,21 @@ TextField:focused {
 .port-input {
     -fx-font-family: "Consolas", "Monaco", monospace;
     -fx-font-weight: 600;
+}
+
+/* ===== LOG AREA - ENHANCED FOR SERVER LOGS ===== */
+.log-area {
+    -fx-background-color: #0f172a;
+    -fx-control-inner-background: #0f172a;
+    -fx-text-fill: #e2e8f0;
+    -fx-font-family: "Consolas", "Monaco", "Courier New", monospace;
+    -fx-font-size: 11px;
+    -fx-background-radius: 8;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 8;
+    -fx-padding: 16;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
 }
 
 /* ComboBox styling */
@@ -285,7 +300,7 @@ Button:disabled {
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-padding: 16;
-    -fx-effect: inset dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
 }
 
 .log-area .content {
@@ -328,7 +343,7 @@ ListView {
     -fx-background-color: transparent;
     -fx-padding: 8 12;
     -fx-border-color: transparent;
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: #000000;
     -fx-font-size: 12px;
     -fx-font-weight: 500;
     -fx-font-family: "Consolas", "Monaco", monospace;
