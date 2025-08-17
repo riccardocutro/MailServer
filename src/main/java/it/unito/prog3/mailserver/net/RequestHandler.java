@@ -8,10 +8,13 @@ import shared.Wire;
 import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -41,18 +44,22 @@ public class RequestHandler implements Runnable {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true)) {
 
-            String line = in.readLine();
-            if (line == null) return;
+            String line;
+            while ((line = in.readLine()) != null) {
+                if (line.isBlank()) continue;
 
-            String[] p = line.split(";", -1); // non perde campi vuoti
-            String cmd = p[0];
+                log.accept("Ricevuto: [" + line + "]");
 
-            switch (cmd) {
-                case Protocol.CMD_LOGIN  -> handleLogin(p, out);
-                case Protocol.CMD_SEND   -> handleSend(p, out);
-                case Protocol.CMD_GET    -> handleGet(p, out);
-                case Protocol.CMD_DELETE -> handleDelete(p, out);
-                default -> out.println(Protocol.RESP_ERROR + ";UnknownCommand");
+                String[] p = line.trim().split(";", -1);
+                String cmd = p[0].toUpperCase();
+
+                switch (cmd) {
+                    case Protocol.CMD_LOGIN -> handleLogin(p, out);
+                    case Protocol.CMD_SEND -> handleSend(p, out);
+                    case Protocol.CMD_GET -> handleGet(p, out);
+                    case Protocol.CMD_DELETE -> handleDelete(p, out);
+                    default -> out.println(Protocol.RESP_ERROR + ";UnknownCommand");
+                }
             }
         } catch (SocketException se) {
             log.accept("Connessione interrotta: " + se.getMessage());
@@ -60,6 +67,16 @@ public class RequestHandler implements Runnable {
             log.accept("Errore I/O handler: " + ioe.getMessage());
         } finally {
             try { socket.close(); } catch (IOException ignored) {}
+        }
+    }
+
+    private String tryUnb64(String s) {
+        try {
+            // evitiamo IllegalArgumentException se non è Base64
+            byte[] decoded = Base64.getDecoder().decode(s);
+            return new String(decoded, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException ex) {
+            return s; // non era Base64: usa il plain text
         }
     }
 
@@ -76,9 +93,9 @@ public class RequestHandler implements Runnable {
 
         String from = p[1];
         List<String> to = Arrays.stream(p[2].split(","))
-                .map(String::trim).filter(s -> !s.isEmpty()).toList();
-        String subject = Wire.unb64(p[3]);
-        String body    = Wire.unb64(p[4]);
+                .map(s -> s.trim().toLowerCase(Locale.ROOT))
+                .filter(s -> !s.isEmpty())
+                .toList();
 
         // Valida destinatari
         for (String r : to) {
@@ -87,6 +104,9 @@ public class RequestHandler implements Runnable {
                 return;
             }
         }
+
+        String subject = tryUnb64(p[3]);
+        String body    = tryUnb64(p[4]);
 
         // Consegna (copia singola in inbox del destinatario)
         for (String r : to) {

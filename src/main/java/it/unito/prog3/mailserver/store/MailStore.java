@@ -36,7 +36,7 @@ public class MailStore {
 
     /** @return true se l'account esiste. */
     public boolean userExists(String email) {
-        return accounts.contains(email);
+        return accounts.contains(norm(email));
     }
 
     /** Genera un nuovo ID email. */
@@ -46,16 +46,18 @@ public class MailStore {
 
     /** Inserisce un messaggio nella inbox del destinatario. */
     public void addEmail(String recipient, Email email) {
-        if (!userExists(recipient)) throw new IllegalArgumentException("Unknown recipient: " + recipient);
-        boxes.get(recipient).add(email);
+        String r = norm(recipient);
+        if (!userExists(r)) throw new IllegalArgumentException("Unknown recipient: " + recipient);
+        boxes.get(r).add(email);
         saveData();
-        log.accept("📩 Nuova email per " + recipient + " [id=" + email.getId() + "]");
+        log.accept("📩 Nuova email per " + r + " [id=" + email.getId() + "]");
     }
 
     /** Restituisce i messaggi con id > lastId. */
     public List<Email> getEmailsAfter(String user, int lastId) {
-        if (!userExists(user)) return List.of();
-        List<Email> inbox = boxes.get(user);
+        String u = norm(user);
+        if (!userExists(u)) return List.of();
+        List<Email> inbox = boxes.get(u);
         synchronized (inbox) {
             List<Email> res = new ArrayList<>();
             for (Email e : inbox) if (e.getId() > lastId) res.add(e);
@@ -65,8 +67,9 @@ public class MailStore {
 
     /** Cancella un messaggio dalla inbox. */
     public boolean deleteEmail(String user, int id) {
-        if (!userExists(user)) return false;
-        List<Email> inbox = boxes.get(user);
+        String u = norm(user);
+        if (!userExists(u)) return false;
+        List<Email> inbox = boxes.get(u);
         boolean removed;
         synchronized (inbox) {
             removed = inbox.removeIf(e -> e.getId() == id);
@@ -79,8 +82,8 @@ public class MailStore {
     public Email buildEmail(String from, List<String> to, String subject, String body) {
         return new Email(
                 getNextEmailId(),
-                from,
-                to,
+                norm(from),
+                to.stream().map(this::norm).toList(),
                 subject,
                 body,
                 LocalDateTime.now()
@@ -95,8 +98,9 @@ public class MailStore {
             log.accept("ℹ️ Nessun datastore: creo account di default");
 
             for (String a : List.of("riccardo@mail.com","davide@mail.com","orlando@mail.it")) {
-                accounts.add(a);
-                boxes.put(a, Collections.synchronizedList(new ArrayList<>()));
+                String n = norm(a);
+                accounts.add(n);
+                boxes.put(n, Collections.synchronizedList(new ArrayList<>()));
             }
 
             idGen.set(0);
@@ -127,4 +131,16 @@ public class MailStore {
             log.accept("⚠️ Errore salvataggio dati: " + e.getMessage());
         }
     }
+
+    /** Normalizza indirizzo */
+    private String norm(String s) {
+        return s == null ? "" : s.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /** Log degli account presenti */
+    public Set<String> listAccounts() {
+        return Collections.unmodifiableSet(accounts);
+    }
+
+
 }
