@@ -59,7 +59,7 @@ public class ServerCore {
         acceptorThread = new Thread(() -> {
             try (ServerSocket ss = new ServerSocket(port)) {
                 serverSocket = ss;
-                log.accept("Server in ascolto su porta " + port);
+                log.accept("Server in ascolto su porta " + port); 
                 while (running) {
                     try {
                         Socket client = ss.accept();
