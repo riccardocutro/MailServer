@@ -57,22 +57,6 @@ public class Email implements Serializable {
         return id + ";" + from + ";" + toStr + ";" + subject + ";" + body + ";" + date.format(DATE_FMT);
     }
 
-    /** Deserializza un'email da stringa ricevuta via socket. */
-    public static Email fromString(String s) {
-        try {
-            String[] parts = s.split(";", 6);
-            int id = Integer.parseInt(parts[0]);
-            String from = parts[1];
-            String to = parts[2];
-            String subject = parts[3];
-            String body = parts[4];
-            LocalDateTime date = LocalDateTime.parse(parts[5], DATE_FMT);
-            return new Email(id, from, to, subject, body, date);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Formato Email non valido: " + s, e);
-        }
-    }
-
     /** @return timestamp di invio (alias di getDate) */
     public LocalDateTime getSentAt() {
         return date;

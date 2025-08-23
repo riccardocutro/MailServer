@@ -9,6 +9,11 @@ import javafx.stage.Stage;
 
 public class ServerApp extends Application {
 
+    /**
+     * Entry point JavaFX per il Mail Server.
+     * Carica l'interfaccia grafica ServerLogView.fxml, inizializza
+     * il ServerController e mostra la finestra principale.
+     */
     @Override
     public void start(Stage stage) throws Exception {
         var loader = new FXMLLoader(getClass().getResource("/ServerLogView.fxml"));
@@ -20,6 +25,7 @@ public class ServerApp extends Application {
         stage.show();
     }
 
+    //Avvio applicazione
     public static void main(String[] args) {
         launch(args);
     }

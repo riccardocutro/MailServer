@@ -10,21 +10,19 @@ import javafx.scene.shape.Circle;
 
 /**
  * Controller della GUI del Mail Server.
- * <p>
  * Avvia/arresta il core del server, gestisce il log e
  * aggiorna lo stato visualizzato nella dashboard.
- * </p>
  */
 public class ServerController {
 
-    // === RIFERIMENTI UI ===
+    //RIFERIMENTI UI
     @FXML private TextArea logArea;
     @FXML private Label statusLabel;
     @FXML private Circle statusDot;
     @FXML private Label connCountLabel;
     @FXML private Label lastEventLabel;
 
-    // === COMPONENTI CORE ===
+    //COMPONENTI CORE
     private ServerCore core;
     private MailStore store;
 
@@ -85,16 +83,11 @@ public class ServerController {
         updateStatus(false);
     }
 
-    /** Aggiorna chip di stato (Online/Offline). */
+    /** Aggiorna stato (Online/Offline). */
     private void updateStatus(boolean online) {
         Platform.runLater(() -> {
             statusLabel.setText(online ? "Online" : "Offline");
             statusDot.getStyleClass().setAll(online ? "online" : "offline");
         });
-    }
-
-    /** (Stub) Aggiorna il numero di connessioni attive. */
-    public void updateConnectionCount(int count) {
-        Platform.runLater(() -> connCountLabel.setText(String.valueOf(count)));
     }
 }

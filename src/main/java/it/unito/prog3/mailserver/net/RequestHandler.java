@@ -111,7 +111,7 @@ public class RequestHandler implements Runnable {
         // Consegna (copia singola in inbox del destinatario)
         for (String r : to) {
             Email email = new Email(
-                    store.getNextEmailId(), // se preferisci, rinomina in nextId()
+                    store.getNextEmailId(),
                     from,
                     List.of(r),
                     subject,

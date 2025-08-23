@@ -50,7 +50,7 @@ public class MailStore {
         if (!userExists(r)) throw new IllegalArgumentException("Unknown recipient: " + recipient);
         boxes.get(r).add(email);
         saveData();
-        log.accept("📩 Nuova email per " + r + " [id=" + email.getId() + "]");
+        log.accept("Nuova email per " + r + " [id=" + email.getId() + "]");
     }
 
     /** Restituisce i messaggi con id > lastId. */
@@ -78,24 +78,12 @@ public class MailStore {
         return removed;
     }
 
-    /** Costruisce una nuova Email pronta per essere salvata. */
-    public Email buildEmail(String from, List<String> to, String subject, String body) {
-        return new Email(
-                getNextEmailId(),
-                norm(from),
-                to.stream().map(this::norm).toList(),
-                subject,
-                body,
-                LocalDateTime.now()
-        );
-    }
-
     /** Carica account e inbox da file, o crea dati iniziali. */
     @SuppressWarnings("unchecked")
     private void loadData() {
         File f = new File(STORE_FILE);
         if (!f.exists()) {
-            log.accept("ℹ️ Nessun datastore: creo account di default");
+            log.accept("Nessun datastore: creo account di default");
 
             for (String a : List.of("riccardo@mail.com","davide@mail.com","orlando@mail.it")) {
                 String n = norm(a);
@@ -115,9 +103,9 @@ public class MailStore {
             accounts.addAll((Set<String>) ois.readObject());
             boxes.putAll((Map<String, List<Email>>) ois.readObject());
             idGen.set(ois.readInt());
-            log.accept("✅ Dati caricati da file. Account: " + accounts);
+            log.accept("Dati caricati da file. Account: " + accounts);
         } catch (IOException | ClassNotFoundException e) {
-            log.accept("⚠️ Errore caricamento dati: " + e.getMessage());
+            log.accept("Errore caricamento dati: " + e.getMessage());
         }
     }
 
@@ -128,7 +116,7 @@ public class MailStore {
             oos.writeObject(boxes);
             oos.writeInt(idGen.get());
         } catch (IOException e) {
-            log.accept("⚠️ Errore salvataggio dati: " + e.getMessage());
+            log.accept("Errore salvataggio dati: " + e.getMessage());
         }
     }
 
@@ -136,11 +124,4 @@ public class MailStore {
     private String norm(String s) {
         return s == null ? "" : s.trim().toLowerCase(Locale.ROOT);
     }
-
-    /** Log degli account presenti */
-    public Set<String> listAccounts() {
-        return Collections.unmodifiableSet(accounts);
-    }
-
-
 }
