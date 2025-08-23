@@ -21,7 +21,7 @@ public class MailStore {
     private final Map<String, List<Email>> boxes = new ConcurrentHashMap<>();
     private final AtomicInteger idGen = new AtomicInteger(0);
     private final Consumer<String> log;
-    private static final String STORE_FILE = "mailstore.dat";
+    private static final String STORE_FILE = "mailstore.txt";
 
     private MailStore(Consumer<String> log) {
         this.log = (log == null) ? s -> {} : log;
