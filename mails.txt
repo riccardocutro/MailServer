@@ -1,0 +1,6 @@
+5;orlando@mail.it;riccardo@mail.com;UmU6IGEgdHV0dGk=;YSB0dXJ0dGkKCi0tLSBSaXNwb3N0YSBhIHR1dHRpIC0tLQoKdGkgcmlzcG9uZG8KLS0tIFJpc3Bvc3RhIC0tLQpjaWFv;2025-08-24T11:31:28.9351112
+6;davide@mail.com;riccardo@mail.com;TUFJVVNDT0xP;TUFJVVNDT0xP;2025-08-24T11:32:56.107995
+1;davide@mail.com;orlando@mail.it;Q0lhbyBvcmxhbmRvIA==;Q2lhbyBjb21lIHN0YWk/;2025-08-24T11:29:56.4563071
+3;davide@mail.com;orlando@mail.it;UmU6IGNpb2E=;CnRpIHJpc3BvbmRvCi0tLSBSaXNwb3N0YSAtLS0KY2lhbw==;2025-08-24T11:30:48.2170577
+2;orlando@mail.it;davide@mail.com;Y2lvYQ==;Y2lhbw==;2025-08-24T11:30:33.1231928
+4;orlando@mail.it;davide@mail.com;UmU6IGEgdHV0dGk=;YSB0dXJ0dGkKCi0tLSBSaXNwb3N0YSBhIHR1dHRpIC0tLQoKdGkgcmlzcG9uZG8KLS0tIFJpc3Bvc3RhIC0tLQpjaWFv;2025-08-24T11:31:28.9201233

@@ -1,9 +1,11 @@
 package shared;
 
 import java.io.Serializable;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -60,5 +62,20 @@ public class Email implements Serializable {
     /** @return timestamp di invio (alias di getDate) */
     public LocalDateTime getSentAt() {
         return date;
+    }
+
+    public static Email fromString(String s) {
+        try {
+            String[] parts = s.split(";", 6);
+            int id = Integer.parseInt(parts[0]);
+            String from = parts[1];
+            List<String> to = Arrays.asList(parts[2].split(","));
+            String subject = new String(Base64.getDecoder().decode(parts[3]), StandardCharsets.UTF_8);
+            String body = new String(Base64.getDecoder().decode(parts[4]), StandardCharsets.UTF_8);
+            LocalDateTime date = LocalDateTime.parse(parts[5], DATE_FMT);
+            return new Email(id, from, to, subject, body, date);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Formato Email non valido: " + s, e);
+        }
     }
 }

@@ -3,17 +3,30 @@ package it.unito.prog3.mailserver.store;
 import shared.Email;
 
 import java.io.*;
-import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 /**
  * Archivio centrale delle caselle di posta.
- * <p>Gestisce account, inbox e persistenza su file, con metodi thread-safe.</p>
+ * Gestisce account, inbox e persistenza su file, con metodi thread-safe.
+ * accounts.txt (un indirizzo per ogni riga)
+ * mails.txt (id;from;toCsv;base64(subject);base64(body);ISO_LOCAL_DATE_TIME)
  */
 public class MailStore {
+
+    private static final String ACCOUNTS_FILE = "accounts.txt";
+    private static final String MAILS_FILE    = "mails.txt";
+    private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
     private static MailStore instance;
 
@@ -21,11 +34,16 @@ public class MailStore {
     private final Map<String, List<Email>> boxes = new ConcurrentHashMap<>();
     private final AtomicInteger idGen = new AtomicInteger(0);
     private final Consumer<String> log;
-    private static final String STORE_FILE = "mailstore.txt";
 
     private MailStore(Consumer<String> log) {
         this.log = (log == null) ? s -> {} : log;
-        loadData();
+        try {
+            log.accept("Working dir: " + System.getProperty("user.dir"));
+            loadAccounts();
+            loadMails();
+        } catch (IOException e) {
+            this.log.accept("Errore caricamento dati: " + e.getMessage());
+        }
     }
 
     /** Singleton globale. */
@@ -78,47 +96,96 @@ public class MailStore {
         return removed;
     }
 
-    /** Carica account e inbox da file, o crea dati iniziali. */
-    @SuppressWarnings("unchecked")
-    private void loadData() {
-        File f = new File(STORE_FILE);
-        if (!f.exists()) {
-            log.accept("Nessun datastore: creo account di default");
-
-            for (String a : List.of("riccardo@mail.com","davide@mail.com","orlando@mail.it")) {
-                String n = norm(a);
-                accounts.add(n);
-                boxes.put(n, Collections.synchronizedList(new ArrayList<>()));
-            }
-
-            idGen.set(0);
-            saveData();
-            log.accept("Account iniziali creati.");
-            return;
-        }
-
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(f))) {
-            accounts.clear();
-            boxes.clear();
-            accounts.addAll((Set<String>) ois.readObject());
-            boxes.putAll((Map<String, List<Email>>) ois.readObject());
-            idGen.set(ois.readInt());
-            log.accept("Dati caricati da file. Account: " + accounts);
-        } catch (IOException | ClassNotFoundException e) {
-            log.accept("Errore caricamento dati: " + e.getMessage());
-        }
-    }
-
     /** Salva lo stato su file. */
     private void saveData() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(STORE_FILE))) {
-            oos.writeObject(accounts);
-            oos.writeObject(boxes);
-            oos.writeInt(idGen.get());
+        try {
+            saveAccounts();
+            saveMails();
         } catch (IOException e) {
             log.accept("Errore salvataggio dati: " + e.getMessage());
         }
     }
+
+    private void loadAccounts() throws IOException {
+        Path path = Paths.get(ACCOUNTS_FILE);
+        accounts.clear();
+        boxes.clear();
+
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String email = norm(line);
+                if (!email.isEmpty()) {
+                    accounts.add(email);
+                    boxes.put(email, Collections.synchronizedList(new ArrayList<>()));
+                }
+            }
+        }
+        if (accounts.isEmpty()) {
+            log.accept("Nessun account presente in " + ACCOUNTS_FILE);
+        }
+    }
+
+    //solo per modifiche future
+    private void saveAccounts() throws IOException {
+        Path tmp = Paths.get(ACCOUNTS_FILE + ".tmp");
+        try (BufferedWriter bw = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            for (String acc : accounts) {
+                bw.write(acc);
+                bw.newLine();
+            }
+        }
+        Files.move(tmp, Paths.get(ACCOUNTS_FILE), REPLACE_EXISTING);
+    }
+
+    private void loadMails() throws IOException {
+        Path path = Paths.get(MAILS_FILE);
+        if (!Files.exists(path)) {
+            log.accept("Nessun file mails.txt, inbox vuote.");
+            return;
+        }
+        try (BufferedReader br = Files.newBufferedReader(path, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                Email e = Email.fromString(line);
+                for (String r : e.getTo()) {
+                    if (accounts.contains(r)) {
+                        boxes.get(r).add(e);
+                        idGen.set(Math.max(idGen.get(), e.getId()));
+                    }
+                }
+            }
+            log.accept("Email caricate da file.");
+        } catch (Exception e) {
+            log.accept("⚠️ Errore caricamento mail: " + e.getMessage());
+        }
+    }
+
+    private void saveMails() throws IOException {
+        Path tmp = Paths.get(MAILS_FILE + ".tmp");
+        try (BufferedWriter bw = Files.newBufferedWriter(tmp, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            for (var entry : boxes.entrySet()) {
+                List<Email> inbox = entry.getValue();
+                synchronized (inbox) {
+                    for (Email e : inbox) {
+                        String id     = String.valueOf(e.getId());
+                        String from   = e.getFrom();
+                        String toCsv  = String.join(",", e.getTo()); // qui è una lista con un solo destinatario
+                        String subj64 = Base64.getEncoder().encodeToString(e.getSubject().getBytes(StandardCharsets.UTF_8));
+                        String body64 = Base64.getEncoder().encodeToString(e.getBody().getBytes(StandardCharsets.UTF_8));
+                        String date   = e.getDate().format(DATE_FMT);
+
+                        bw.write(String.join(";", id, from, toCsv, subj64, body64, date));
+                        bw.newLine();
+                    }
+                }
+            }
+        }
+        Files.move(tmp, Paths.get(MAILS_FILE), REPLACE_EXISTING);
+    }
+
 
     /** Normalizza indirizzo */
     private String norm(String s) {
