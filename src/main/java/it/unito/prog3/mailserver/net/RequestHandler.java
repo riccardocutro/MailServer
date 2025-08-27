@@ -113,7 +113,7 @@ public class RequestHandler implements Runnable {
             Email email = new Email(
                     store.getNextEmailId(),
                     from,
-                    List.of(r),
+                    to,
                     subject,
                     body,
                     LocalDateTime.now()

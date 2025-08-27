@@ -1,6 +1,7 @@
-5;orlando@mail.it;riccardo@mail.com;UmU6IGEgdHV0dGk=;YSB0dXJ0dGkKCi0tLSBSaXNwb3N0YSBhIHR1dHRpIC0tLQoKdGkgcmlzcG9uZG8KLS0tIFJpc3Bvc3RhIC0tLQpjaWFv;2025-08-24T11:31:28.9351112
-6;davide@mail.com;riccardo@mail.com;TUFJVVNDT0xP;TUFJVVNDT0xP;2025-08-24T11:32:56.107995
-1;davide@mail.com;orlando@mail.it;Q0lhbyBvcmxhbmRvIA==;Q2lhbyBjb21lIHN0YWk/;2025-08-24T11:29:56.4563071
-3;davide@mail.com;orlando@mail.it;UmU6IGNpb2E=;CnRpIHJpc3BvbmRvCi0tLSBSaXNwb3N0YSAtLS0KY2lhbw==;2025-08-24T11:30:48.2170577
-2;orlando@mail.it;davide@mail.com;Y2lvYQ==;Y2lhbw==;2025-08-24T11:30:33.1231928
-4;orlando@mail.it;davide@mail.com;UmU6IGEgdHV0dGk=;YSB0dXJ0dGkKCi0tLSBSaXNwb3N0YSBhIHR1dHRpIC0tLQoKdGkgcmlzcG9uZG8KLS0tIFJpc3Bvc3RhIC0tLQpjaWFv;2025-08-24T11:31:28.9201233
+7;orlando@mail.it;davide@mail.com,riccardo@mail.com;UmU6IEZ3ZDogY2lhbw==;Q2lhbwoKLS0tIFJpc3Bvc3RhIGEgdHV0dGkgLS0tCi0tLS0tLS0tLS0gTWVzc2FnZ2lvIGlub2x0cmF0byAtLS0tLS0tLS0tCkRhOiByaWNjYXJkb0BtYWlsLmNvbQpBOiBkYXZpZGVAbWFpbC5jb20KRGF0YTogMjAyNS0wOC0yNyAxMjo1NApPZ2dldHRvOiBjaWFvCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkNJQUlP;2025-08-27T12:55:07.4796793
+1;riccardo@mail.com;orlando@mail.it,davide@mail.com;Q2lhbyBhIHR1dHRp;Q0lhbyBhIHR1dHRp;2025-08-27T12:10:05.727889
+3;riccardo@mail.com;orlando@mail.it;MQ==;MQ==;2025-08-27T12:30:33.0155318
+5;davide@mail.com;orlando@mail.it;RndkOiBjaWFv;LS0tLS0tLS0tLSBNZXNzYWdnaW8gaW5vbHRyYXRvIC0tLS0tLS0tLS0KRGE6IHJpY2NhcmRvQG1haWwuY29tCkE6IGRhdmlkZUBtYWlsLmNvbQpEYXRhOiAyMDI1LTA4LTI3IDEyOjU0Ck9nZ2V0dG86IGNpYW8KLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQoKQ0lBSU8=;2025-08-27T12:54:48.5145273
+2;riccardo@mail.com;orlando@mail.it,davide@mail.com;Q2lhbyBhIHR1dHRp;Q0lhbyBhIHR1dHRp;2025-08-27T12:10:08.4297945
+4;riccardo@mail.com;davide@mail.com;Y2lhbw==;Q0lBSU8=;2025-08-27T12:54:18.673871
+6;orlando@mail.it;davide@mail.com,riccardo@mail.com;UmU6IEZ3ZDogY2lhbw==;Q2lhbwoKLS0tIFJpc3Bvc3RhIGEgdHV0dGkgLS0tCi0tLS0tLS0tLS0gTWVzc2FnZ2lvIGlub2x0cmF0byAtLS0tLS0tLS0tCkRhOiByaWNjYXJkb0BtYWlsLmNvbQpBOiBkYXZpZGVAbWFpbC5jb20KRGF0YTogMjAyNS0wOC0yNyAxMjo1NApPZ2dldHRvOiBjaWFvCi0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0KCkNJQUlP;2025-08-27T12:55:07.4668933
