@@ -26,9 +26,13 @@
 
                 <Separator orientation="VERTICAL"/>
 
-                <!-- Porta + azioni -->
+                <!-- Porta (fissa) + azioni -->
                 <Label text="Porta:"/>
-                <TextField fx:id="portField" promptText="5555" prefWidth="80"/>
+                <TextField fx:id="portField"
+                           text="5555"
+                           prefWidth="80"
+                           editable="false"
+                           focusTraversable="false"/>
                 <Button text="Avvia" fx:id="startBtn" onAction="#onStart" styleClass="primary"/>
                 <Button text="Arresta" fx:id="stopBtn" onAction="#onStop" styleClass="secondary"/>
 

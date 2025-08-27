@@ -18,25 +18,19 @@ import java.util.Locale;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-/**
- * Gestisce una singola connessione client.
- * <p>Legge un comando testuale, lo interpreta e invia la risposta.</p>
- */
 public class RequestHandler implements Runnable {
 
-    private final Socket socket;
-    private final MailStore store;
-    private final Consumer<String> log;
+    private final Socket socket;              // connessione accettata
+    private final MailStore store;            // archivio condiviso
+    private final Consumer<String> log;       // logger (no-op se null)
+    private final Runnable onClose;           // callback a fine gestione (decremento connessioni)
 
-    /**
-     * @param socket connessione accettata dal server
-     * @param store  archivio dati condiviso
-     * @param log    callback per log eventi (usare s -> {} per disabilitare)
-     */
-    public RequestHandler(Socket socket, MailStore store, Consumer<String> log) {
+    // costruttore con callback onClose (può essere null → no-op)
+    public RequestHandler(Socket socket, MailStore store, Consumer<String> log, Runnable onClose) {
         this.socket = socket;
         this.store = store;
         this.log = (log == null) ? s -> {} : log;
+        this.onClose = (onClose == null) ? () -> {} : onClose;
     }
 
     @Override
@@ -51,14 +45,14 @@ public class RequestHandler implements Runnable {
                 log.accept("Ricevuto: [" + line + "]");
 
                 String[] p = line.trim().split(";", -1);
-                String cmd = p[0].toUpperCase();
+                String cmd = p[0].toUpperCase(Locale.ROOT);
 
                 switch (cmd) {
                     case Protocol.CMD_LOGIN -> handleLogin(p, out);
-                    case Protocol.CMD_SEND -> handleSend(p, out);
-                    case Protocol.CMD_GET -> handleGet(p, out);
-                    case Protocol.CMD_DELETE -> handleDelete(p, out);
-                    default -> out.println(Protocol.RESP_ERROR + ";UnknownCommand");
+                    case Protocol.CMD_SEND  -> handleSend(p, out);
+                    case Protocol.CMD_GET   -> handleGet(p, out);
+                    case Protocol.CMD_DELETE-> handleDelete(p, out);
+                    default                 -> out.println(Protocol.RESP_ERROR + ";UnknownCommand");
                 }
             }
         } catch (SocketException se) {
@@ -67,37 +61,46 @@ public class RequestHandler implements Runnable {
             log.accept("Errore I/O handler: " + ioe.getMessage());
         } finally {
             try { socket.close(); } catch (IOException ignored) {}
+            // decrementa il contatore connessioni attive lato ServerCore
+            onClose.run();
         }
     }
 
+    // prova a decodificare Base64; se fallisce, restituisce la stringa originale
     private String tryUnb64(String s) {
         try {
-            // evitiamo IllegalArgumentException se non è Base64
             byte[] decoded = Base64.getDecoder().decode(s);
             return new String(decoded, StandardCharsets.UTF_8);
         } catch (IllegalArgumentException ex) {
-            return s; // non era Base64: usa il plain text
+            return s;
         }
     }
 
-    /** LOGIN;email */
+    // LOGIN;email
     private void handleLogin(String[] p, PrintWriter out) {
         if (p.length < 2) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
         String email = p[1];
         out.println(store.userExists(email) ? Protocol.RESP_OK : Protocol.RESP_ERROR + ";UserNotFound");
     }
 
-    /** SEND;from;toCsv;base64(subject);base64(body) */
+    // SEND;from;toCsv;base64(subject);base64(body)
     private void handleSend(String[] p, PrintWriter out) {
         if (p.length < 5) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
 
         String from = p[1];
+
+        // valida mittente (consigliato: evita spoofing fra account noti)
+        if (!store.userExists(from)) {
+            out.println(Protocol.RESP_ERROR + ";InvalidSender");
+            return;
+        }
+
         List<String> to = Arrays.stream(p[2].split(","))
                 .map(s -> s.trim().toLowerCase(Locale.ROOT))
                 .filter(s -> !s.isEmpty())
                 .toList();
 
-        // Valida destinatari
+        // valida destinatari (prima non esistente → errore specifico)
         for (String r : to) {
             if (!store.userExists(r)) {
                 out.println(Protocol.RESP_ERROR + ";InvalidRecipient;" + r);
@@ -108,7 +111,7 @@ public class RequestHandler implements Runnable {
         String subject = tryUnb64(p[3]);
         String body    = tryUnb64(p[4]);
 
-        // Consegna (copia singola in inbox del destinatario)
+        // consegna: copia singola per ogni destinatario
         for (String r : to) {
             Email email = new Email(
                     store.getNextEmailId(),
@@ -125,16 +128,23 @@ public class RequestHandler implements Runnable {
         log.accept("SEND da " + from + " a " + String.join(",", to));
     }
 
-    /** GET;user;lastId  → stream di: MSG;id;from;toCsv;base64(subject);base64(body);epochSeconds ... poi END */
+    // GET;user;lastId  → stream: MSG;id;from;toCsv;base64(subject);base64(body);epochSeconds ... END
     private void handleGet(String[] p, PrintWriter out) {
         if (p.length < 3) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
 
         String user = p[1];
         int lastId;
-        try { lastId = Integer.parseInt(p[2]); }
-        catch (NumberFormatException e) { out.println(Protocol.RESP_ERROR + ";InvalidId"); return; }
+        try {
+            lastId = Integer.parseInt(p[2]);
+        } catch (NumberFormatException e) {
+            out.println(Protocol.RESP_ERROR + ";InvalidId");
+            return;
+        }
 
-        if (!store.userExists(user)) { out.println(Protocol.RESP_ERROR + ";UserNotFound"); return; }
+        if (!store.userExists(user)) {
+            out.println(Protocol.RESP_ERROR + ";UserNotFound");
+            return;
+        }
 
         List<Email> list = store.getEmailsAfter(user, lastId);
         for (Email e : list) {
@@ -154,16 +164,23 @@ public class RequestHandler implements Runnable {
         log.accept("GET per " + user + " -> " + list.size() + " nuovi");
     }
 
-    /** DELETE;user;msgId */
+    // DELETE;user;msgId
     private void handleDelete(String[] p, PrintWriter out) {
         if (p.length < 3) { out.println(Protocol.RESP_ERROR + ";BadRequest"); return; }
 
         String user = p[1];
         int msgId;
-        try { msgId = Integer.parseInt(p[2]); }
-        catch (NumberFormatException e) { out.println(Protocol.RESP_ERROR + ";InvalidId"); return; }
+        try {
+            msgId = Integer.parseInt(p[2]);
+        } catch (NumberFormatException e) {
+            out.println(Protocol.RESP_ERROR + ";InvalidId");
+            return;
+        }
 
-        if (!store.userExists(user)) { out.println(Protocol.RESP_ERROR + ";UserNotFound"); return; }
+        if (!store.userExists(user)) {
+            out.println(Protocol.RESP_ERROR + ";UserNotFound");
+            return;
+        }
 
         boolean ok = store.deleteEmail(user, msgId);
         out.println(ok ? Protocol.RESP_OK : Protocol.RESP_ERROR + ";MessageNotFound");
