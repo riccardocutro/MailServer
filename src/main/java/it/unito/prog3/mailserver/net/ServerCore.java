@@ -42,7 +42,6 @@ public class ServerCore {
         this.onConnCount = onConnCount != null ? onConnCount : (n -> {});
     }
 
-    // costruttore “compatibile” con il tuo codice esistente (se non vuoi passare la callback)
     public ServerCore(int port, MailStore store, Consumer<String> log) {
         this(port, store, log, null);
     }

@@ -158,7 +158,7 @@ public class MailStore {
             }
             log.accept("Email caricate da file.");
         } catch (Exception e) {
-            log.accept("⚠️ Errore caricamento mail: " + e.getMessage());
+            log.accept("Errore caricamento mail: " + e.getMessage());
         }
     }
 
